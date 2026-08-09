@@ -1,17 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════
    RAMON GALVAN
    ═══════════════════════════════════════════════════════════════════ */
-
 @font-face {
   font-family: 'PP Neue Montreal Mono';
-  src: url('../fonts/PPNeueMontrealMono-Medium.woff') format('woff');
+  src: url('../fonts/PPNeueMontrealMono-Medium.woff2') format('woff2'),
+       url('../fonts/PPNeueMontrealMono-Medium.woff')  format('woff');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
-/* If you get a .woff2, add it as the first src — roughly 30% smaller:
-   src: url('../fonts/PPNeueMontrealMono-Medium.woff2') format('woff2'),
-        url('../fonts/PPNeueMontrealMono-Medium.woff')  format('woff'); */
 
 
 /* ── TOKENS ─────────────────────────────────────────────────────── */
