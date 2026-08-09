@@ -1,0 +1,622 @@
+/* ═══════════════════════════════════════════════════════════════════
+   RAMON GALVAN
+   ═══════════════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'PP Neue Montreal Mono';
+  src: url('../fonts/PPNeueMontrealMono-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+/* If you get a .woff2, add it as the first src — roughly 30% smaller:
+   src: url('../fonts/PPNeueMontrealMono-Medium.woff2') format('woff2'),
+        url('../fonts/PPNeueMontrealMono-Medium.woff')  format('woff'); */
+
+
+/* ── TOKENS ─────────────────────────────────────────────────────── */
+
+:root {
+
+  --c-black:  #000000;
+  --c-white:  #FFFFFF;
+  --c-paper:  #FFFFFF;
+  --c-footer: #111111;
+
+  --font-mono: 'PP Neue Montreal Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --t-nav:     0.875rem;
+  --t-body:    0.8125rem;
+  --t-caption: 0.75rem;
+
+  --lh-body: 1.55;
+  --ls-nav:  0.12em;
+  --ls-caps: 0.16em;
+
+  /* ── 12 column grid ───────────────────────────────────────────────
+     20px page margin, 20px gutters. --col is one column's width, so
+     anything can be placed on the grid by counting columns:
+       n columns wide  =  calc(var(--col) * n + var(--grid-gutter) * (n - 1))
+     --vw is written by main.js and excludes the scrollbar, so the
+     grid matches the visible page rather than overshooting by ~15px. */
+  --grid-margin: 20px;
+  --grid-gutter: 20px;
+  --col: calc((var(--vw) - var(--grid-margin) * 2 - var(--grid-gutter) * 11) / 12);
+
+  --gutter:        var(--grid-margin);
+  --gutter-bottom: clamp(2rem, 9vh, 6.5rem);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Wordmark dock ────────────────────────────────────────────────
+     720px at rest, 220px docked, 5px from the corner.
+
+     min() caps the start width on small screens — 720px would overflow
+     a phone. Raise 86vw if you want it tighter to the edges.
+
+     --vw, --vh and --wm-ratio are written by main.js:
+       vw/vh    the viewport excluding the scrollbar, so centring is exact
+       wm-ratio the wordmark's own height/width, measured once it loads,
+                so this keeps working when you swap in the SVG          */
+  --wm-start: min(720px, 86vw);
+  --wm-dock:  160px;
+  --wm-pad:   20px;   /* top padding for the whole header line */
+
+  /* Optical corrections for the docked wordmark.
+
+     An SVG's box and its visible glyphs are different things: padding
+     inside the file offsets the artwork while the box stays put. So
+     aligning the boxes, which the CSS does exactly, doesn't guarantee
+     the ink lines up.
+
+     Both values were derived by measuring your header screenshot as a
+     proportion of the wordmark's own width, so they hold regardless of
+     what zoom the capture was taken at.
+
+       nudge  positive moves it down
+       shift  positive moves it right
+
+     If you re-export RG_white.svg with a tighter, symmetrical crop,
+     set both back to 0. Correcting it in the file is better than
+     correcting it here. */
+  --wm-dock-nudge: 0px;
+  --wm-dock-shift: calc(var(--wm-dock) * 0.08);
+
+  --vw: 100vw;
+  --vh: 100svh;
+
+  /* Both replaced with measured values by main.js on load and resize.
+     These fallbacks keep the dock roughly right if that never happens.
+     --wm-scale-end is the dock width divided by the start width, as a
+     plain number: 160 / 720 = 0.2222 */
+  --wm-ratio: 0.4;
+  --wm-scale-end: 0.2222;
+
+  /* Height of the wordmark at full size. Used to place the contact
+     button underneath it on the last section. */
+  --wm-h: calc(var(--wm-start) * var(--wm-ratio));
+}
+
+
+/* ── RESET ──────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--c-black);
+  color: var(--c-white);
+  font-family: var(--font-mono);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img, video { display: block; max-width: 100%; }
+h1 { margin: 0; font-weight: 500; }
+p  { margin: 0; }
+a  { color: inherit; }
+
+:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 200;
+  padding: var(--gutter);
+  background: var(--c-black);
+  color: var(--c-white);
+}
+.skip-link:focus { left: 0; top: 0; }
+
+
+/* ── WORDMARK ───────────────────────────────────────────────────────
+   Fixed for the whole page. Anchored to the top-left corner, then
+   pushed to centre screen at rest and pulled back to the corner as
+   --scroll-progress runs 0 to 1.
+
+   Working from the corner rather than from centre means the docked
+   position is exact: at progress 1 the transform is simply
+   translate(5px, 5px) scale(220/720).
+   ─────────────────────────────────────────────────────────────────── */
+
+.wordmark {
+  --p: var(--scroll-progress, 0);
+
+  /* Resting: centred both ways. Docked: centred horizontally, 5px down.
+     Both x positions are centred, so the wordmark shrinks straight
+     upward without drifting sideways on the way. */
+  --wm-x0: calc((var(--vw) - var(--wm-start)) / 2);
+  --wm-y0: calc((var(--vh) - var(--wm-h))     / 2);
+  --wm-x1: calc((var(--vw) - var(--wm-dock)) / 2 + var(--wm-dock-shift));
+  --wm-y1: calc(var(--wm-pad) + var(--wm-dock-nudge));
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+
+  width: var(--wm-start);
+  transform-origin: top left;
+  pointer-events: none;
+
+  transform:
+    translate(
+      calc(var(--wm-x0) + (var(--wm-x1) - var(--wm-x0)) * var(--p)),
+      calc(var(--wm-y0) + (var(--wm-y1) - var(--wm-y0)) * var(--p))
+    )
+    scale(calc(1 + (var(--wm-scale-end) - 1) * var(--p)));
+
+  will-change: transform;
+  transition: filter 0.4s var(--ease);
+}
+
+
+/* ── HEADER BAR ─────────────────────────────────────────────────────
+   Phones only. Hidden by default and switched on from the second
+   section onward, so the hero stays uncovered.
+
+   Height is derived rather than fixed: the top inset, plus the docked
+   wordmark's own height, plus its nudge, plus breathing room below. So
+   it keeps fitting if the dock size or the SVG's proportions change.
+   ─────────────────────────────────────────────────────────────────── */
+
+.header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;              /* under the wordmark (40) and nav (60) */
+
+  height: calc(
+    var(--wm-pad)
+    + var(--wm-dock-nudge)
+    + var(--wm-dock) * var(--wm-ratio)
+    + var(--wm-pad)
+  );
+
+  background: var(--c-black);
+  pointer-events: none;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s var(--ease), visibility 0.35s;
+}
+
+
+/* ── NAV ────────────────────────────────────────────────────────── */
+
+/* Bandcamp left, menu right, aligned on one line. */
+.site-header {
+  position: fixed;
+  top: var(--wm-pad);
+  left: 0;
+  right: 0;
+  z-index: 60;
+
+  /* Height matches the docked wordmark, so the header is a band the
+     wordmark exactly fills. Centring inside it lines all three up on a
+     shared middle rather than a shared top edge. */
+  height: calc(var(--wm-dock) * var(--wm-ratio));
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--gutter);
+
+  pointer-events: none;   /* the bar itself isn't clickable... */
+}
+.site-header > * { pointer-events: auto; }   /* ...its contents are */
+
+.site-nav ul { list-style: none; margin: 0; padding: 0; text-align: right; }
+.site-nav li + li { margin-top: 0.4em; }
+
+.site-nav a {
+  display: inline-block;
+  font-size: var(--t-nav);
+  line-height: 1;            /* so the glyphs sit at the top of the line box */
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  text-decoration: none;
+
+  transition: opacity 0.3s var(--ease), color 0.4s var(--ease);
+}
+.site-nav a:hover { opacity: 0.7; }
+
+
+/* ── COLOUR FLIP OVER THE LIGHT SECTION ─────────────────────────────
+   main.js sets data-on-light when "latest" is under the header.
+
+   The wordmark deliberately does NOT flip — it stays white throughout,
+   so it vanishes against the white section. That's intentional. Delete
+   nothing here to change it; add
+     body[data-on-light="true"] .wordmark { filter: invert(1); }
+   and it will flip like the rest.
+
+   Bandcamp is a white SVG, so it would vanish too. It flips with the
+   menu rather than the wordmark, on the assumption that a disappearing
+   link is less deliberate than a disappearing logo. Say if you'd
+   rather it went white all the way through as well.
+   ─────────────────────────────────────────────────────────────────── */
+
+.site-nav a { color: var(--c-white); }
+
+body[data-on-light="true"] .site-nav a { color: var(--c-black); }
+body[data-on-light="true"] .bandcamp   { filter: invert(1); }
+
+
+/* ── SOUND TOGGLE ───────────────────────────────────────────────────
+   Fades out past the hero. It has nothing to control down there —
+   the film pauses when it leaves the screen.
+
+   visibility, not just opacity: a transparent button is still keyboard
+   focusable, which would let someone tab to a control they can't see.
+   ─────────────────────────────────────────────────────────────────── */
+
+.sound-toggle {
+  position: fixed;
+  left: var(--gutter);
+  bottom: var(--gutter-bottom);
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-white);
+  font: inherit;
+  font-size: var(--t-caption);
+  letter-spacing: var(--ls-nav);
+  cursor: pointer;
+  opacity: 0.8;
+
+  transition: opacity 0.45s var(--ease), visibility 0.45s;
+}
+.sound-toggle:hover { opacity: 1; }
+
+body[data-past-hero="true"] .sound-toggle { opacity: 0; visibility: hidden; }
+
+.sound-toggle__icon {
+  position: relative;
+  width: 0.7em;
+  height: 0.7em;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+.sound-toggle__icon::after {
+  content: '';
+  position: absolute;
+  inset: -3px auto;
+  left: 50%;
+  border-left: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+.sound-toggle[aria-pressed="true"] .sound-toggle__icon::after { display: none; }
+
+
+/* ── SHARED MEDIA ───────────────────────────────────────────────── */
+
+.hero__video,
+.about__image,
+.contact__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bandcamp {
+  display: block;
+  opacity: 0.92;
+  transition: opacity 0.3s var(--ease), filter 0.4s var(--ease);
+}
+.bandcamp:hover { opacity: 1; }
+.bandcamp img { width: clamp(86px, 7.2vw, 119px); height: auto; }   /* 10% down */
+
+
+/* ── 1. HERO ────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+  background: #1F0809;
+}
+
+
+/* ── 2. ABOUT ───────────────────────────────────────────────────────
+   Image fades out of black at 0.5s, paragraph fades up at 0.7s, both
+   once the section comes into view. Delays are on the transition, so
+   they're adjustable here without touching the JavaScript.
+   ─────────────────────────────────────────────────────────────────── */
+
+.about {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--c-black);   /* what the image fades out of */
+}
+
+/* Gated behind .js — main.js adds that class to <html>. Without
+   JavaScript the image is simply visible rather than stuck at zero. */
+.js .about__image {
+  opacity: 0;
+  transition: opacity 2.4s var(--ease) 0.5s;
+}
+.js .about.is-visible .about__image { opacity: 1; }
+
+/* Columns 10 to 11, so it clears the CONTACT link sitting in column 12
+   as the page scrolls past it.
+
+   right = the page margin, plus column 12 and its gutter
+   width = two columns plus the gutter between them */
+.about__text {
+  position: absolute;
+  right: calc(var(--grid-margin) + var(--col) + var(--grid-gutter));
+  bottom: clamp(3rem, 24vh, 14rem);
+  z-index: 10;
+
+  width: calc(var(--col) * 2 + var(--grid-gutter));
+  line-height: 1.7;
+
+}
+
+/* Slides in from the right. overflow-x is hidden on body, so the
+   off-screen start position can't create a horizontal scrollbar. */
+.js .about__text {
+  opacity: 0;
+  transform: translateX(4rem);
+  transition:
+    opacity   0.9s var(--ease) 0.7s,
+    transform 0.9s var(--ease) 0.7s;
+}
+.js .about.is-visible .about__text { opacity: 1; transform: none; }
+
+
+/* ── 3. LATEST ──────────────────────────────────────────────────────
+   Full-height white page, content centred.
+   ─────────────────────────────────────────────────────────────────── */
+
+.latest {
+  position: relative;
+  z-index: 45;   /* above the wordmark (40), below the nav (60) */
+
+  min-height: 100svh;
+  background: var(--c-paper);
+  color: var(--c-black);
+  padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(3rem, 8vh, 6rem);
+
+  display: grid;
+  place-items: center;
+}
+
+.latest__inner {
+  width: 100%;
+  max-width: 1030px;
+
+  display: grid;
+  grid-template-columns: 320fr 545fr;
+  gap: clamp(2rem, 9vw, 10.5rem);
+  align-items: start;
+}
+
+.latest__cover {
+  display: block;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+}
+.latest__cover img { width: 100%; height: auto; }
+
+.latest__link {
+  display: block;
+  margin-top: 1.4em;
+  text-align: center;
+  font-size: var(--t-caption);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: opacity 0.3s var(--ease);
+}
+.latest__link:hover { opacity: 0.7; }
+
+.latest__notes { display: grid; gap: 1.6em; }
+
+
+/* ── 4. CONTACT ─────────────────────────────────────────────────── */
+
+.contact {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--c-black);   /* what the image fades out of */
+
+  display: grid;
+  place-items: center;
+}
+
+/* Fades in over 0.5s. */
+.js .contact__image {
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+.js .contact.is-visible .contact__image { opacity: 1; }
+
+.contact__button {
+  position: relative;
+  z-index: 10;
+
+  padding: 0.85em 1.6em;
+  background: var(--c-white);
+  color: var(--c-black);
+  font-size: var(--t-caption);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
+}
+.contact__button:hover { background: var(--c-black); color: var(--c-white); }
+
+
+
+
+/* ── FOOTER ─────────────────────────────────────────────────────── */
+
+.site-footer {
+  background: var(--c-footer);
+  color: var(--c-white);
+  padding: clamp(1.75rem, 4vh, 2.5rem) var(--gutter);
+  text-align: center;
+}
+
+.site-footer p {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+
+  /* Letter-spacing is added after every character including the last,
+     so a centred line ends up sitting half a space left of true centre.
+     This pushes it back, and tracks the value above. */
+  text-indent: 5px;
+}
+
+
+/* ── MOBILE ─────────────────────────────────────────────────────── */
+
+@media (max-width: 48em) {
+
+  /* Three items across a phone's width is tight. At 160px the docked
+     wordmark nearly touches the Bandcamp mark at 390px, and overlaps
+     it outright at 320px, so both come down on small screens. */
+  :root {
+    --wm-dock: 96px;
+
+    /* ── 5 column grid ────────────────────────────────────────────
+       Twelve columns is far too fine for a phone. Derived from your
+       reference by proportion, so it holds at any screen width:
+         margin 1.5%, gutter 5.2%, column 15.5%
+       which at 390px works out at 6 / 20 / 60.
+
+       --gutter is pinned back to 20px below, so the header keeps its
+       original inset — only the content grid changes.              */
+    --grid-margin: 6px;
+    --grid-gutter: 20px;
+    --col: calc((var(--vw) - var(--grid-margin) * 2 - var(--grid-gutter) * 4) / 5);
+
+    --gutter: 20px;
+
+    /* Columns 2 to 4. Content sits here on every section. */
+    --content-left:  calc(var(--grid-margin) + var(--col) + var(--grid-gutter));
+    --content-width: calc(var(--col) * 3 + var(--grid-gutter) * 2);
+  }
+
+  .about__text {
+    left: var(--content-left);
+    right: auto;
+    width: var(--content-width);
+    bottom: clamp(2.5rem, 12vh, 6rem);
+  }
+
+  /* The section stops centring its contents; the block is placed on
+     the grid instead.
+
+     place-items has to be reset explicitly. Switching to display:block
+     doesn't clear it, and left in place it centres the child on top of
+     the margin below — which offsets it twice.
+
+     z-index goes back to auto here. On desktop this section sits above
+     the wordmark so its black type paints over it; on phones the black
+     header bar does that job instead, and content must stay underneath
+     the bar rather than over it. */
+  .latest {
+    display: block;
+    place-items: initial;
+    padding-inline: 0;
+    z-index: auto;
+  }
+
+  .latest__inner {
+    grid-template-columns: 1fr;
+    gap: clamp(2.5rem, 8vw, 4rem);
+    max-width: none;
+    width: var(--content-width);
+    margin-inline: 0;
+    margin-left: var(--content-left);
+  }
+
+  /* Left aligned on the grid rather than centred under the cover. */
+  .latest__link { text-align: left; }
+
+  /* The bar appears once the hero has gone. main.js sets data-off-hero. */
+  body[data-off-hero="true"] .header-bar {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* With a black bar behind them, the header stays white the whole way
+     down — so the flip over the light section is switched off here. */
+  body[data-on-light="true"] .site-nav a { color: var(--c-white); }
+  body[data-on-light="true"] .bandcamp   { filter: none; }
+
+  .contact { min-height: 100svh; }
+
+  .bandcamp img { width: 76px; }
+}
+
+
+/* ── REDUCED MOTION ─────────────────────────────────────────────────
+   The wordmark docks immediately rather than travelling, so the header
+   still works but nothing moves across the screen.
+   ─────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html { scroll-behavior: auto; }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .wordmark { --p: 1; }
+
+  .js .about__image    { opacity: 1; }
+  .js .about__text     { opacity: 1; transform: none; }
+  .js .contact__image  { opacity: 1; }
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Ramon Galvan</title>
+  <meta name="description" content="Ramon Galvan is an experimental pop project from Cape Town, South Africa. Blending post rock, folk and electronic sensibilities.">
+
+  <meta property="og:title" content="Ramon Galvan">
+  <meta property="og:description" content="Experimental pop from Cape Town, South Africa.">
+  <meta property="og:image" content="img/Opaker_final.jpg">
+  <meta property="og:type" content="website">
+
+  <link rel="icon" href="img/favicon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <a class="skip-link" href="#about">Skip to content</a>
+
+  <!-- The real page heading. Hidden visually because the wordmark is
+       an image — this is what screen readers and Google read. -->
+  <h1 class="visually-hidden">Ramon Galvan</h1>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       FIXED HEADER
+       Wordmark and nav both stay put for the whole page. The wordmark
+       starts large and centred, then docks top-left as you scroll.
+       Both flip to black over the white "latest" section.
+       ══════════════════════════════════════════════════════════════ -->
+
+  <!-- Black bar behind the header on phones, from the second section
+       onward, so content scrolls underneath it rather than colliding
+       with the wordmark and menu. Sits below both in the stack. -->
+  <div class="header-bar" aria-hidden="true"></div>
+
+  <img class="wordmark" id="wordmark" src="img/RG_white.svg" alt="" aria-hidden="true">
+
+  <!-- Bandcamp left, menu right, on one line across the top. -->
+  <header class="site-header">
+
+    <!-- BANDCAMP URL 1 of 3 -->
+    <a class="bandcamp" href="https://ramongalvan.bandcamp.com/album/opaker" target="_blank" rel="noopener">
+      <img src="img/Bandcamp_white.svg" alt="Bandcamp">
+    </a>
+
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="#contact">contact</a></li>
+      </ul>
+    </nav>
+
+  </header>
+
+  <!-- Browsers only autoplay muted video, so the film always starts
+       silent and this turns sound ON. The label always states the
+       action the click will perform. Fades away with the hero, since
+       the film pauses once it's off screen. -->
+  <button class="sound-toggle" id="sound-toggle" aria-pressed="false">
+    <span class="sound-toggle__icon" aria-hidden="true"></span>
+    <span class="sound-toggle__text">sound on</span>
+  </button>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       1 — HERO
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="hero" id="top">
+
+    <video
+      class="hero__video"
+      id="film"
+      poster="img/filmposter.jpg"
+      autoplay muted loop playsinline preload="metadata">
+      <source src="video/red_telephone.mp4" type="video/mp4">
+    </video>
+
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       2 — ABOUT
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="about" id="about">
+
+    <img class="about__image" src="img/Guitar_img.jpg" alt="Ramon Galvan playing guitar in a studio."
+         width="2400" height="1600" loading="lazy" decoding="async">
+
+    <p class="about__text">
+      Ramon Galvan is an experimental pop project from Cape Town,
+      South Africa. Blending post rock, folk and electronic
+      sensibilities.
+    </p>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       3 — LATEST
+       The only light section. Two columns on desktop, stacked on mobile.
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="latest" id="latest">
+
+    <div class="latest__inner">
+
+      <!-- BANDCAMP URL 2 and 3 of 3 — the cover and the caption below it
+           both link to the release. Point them at the album page rather
+           than the artist page if you have one. -->
+      <div class="latest__release">
+        <a class="latest__cover" href="https://ramongalvan.bandcamp.com/album/opaker"
+           target="_blank" rel="noopener">
+          <img src="img/Opaker_final.jpg" alt="Opaker album cover"
+               width="1400" height="1400" loading="lazy" decoding="async">
+        </a>
+        <a class="latest__link" href="https://ramongalvan.bandcamp.com/album/opaker"
+           target="_blank" rel="noopener">Listen on Bandcamp</a>
+      </div>
+
+      <div class="latest__notes">
+
+        <p>
+          Opaker, Ramon Galvan's latest collection thrives on fracture:
+          conducted through dismantled telephone mechanisms, culled from
+          remote studio jams during 2020, written in isolation. The songs
+          channel busted electronics, skeletal pulses of early hip hop and
+          the abyssal grandeur of lyrics that hover on the edge of
+          disclosure, refusing catharsis.
+        </p>
+
+        <p>Written and Recorded by Ramon Galvan and Nic da Silva</p>
+
+        <p>
+          Cover Design by Jesse Breytenbach<br>
+          Art Direction by Ramon Galvan<br>
+          Mixed and Mastered by Simon Ratcliffe at Sound and Motion, Cape Town
+        </p>
+
+        <p><time datetime="2026-04-01">Released April 1, 2026</time></p>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       4 — CONTACT
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="contact" id="contact">
+
+    <img class="contact__image" src="img/Contact_img.png" alt=""
+         width="2400" height="1200" loading="lazy" decoding="async">
+
+    <!-- EMAIL ADDRESS — replace hello@example.com -->
+    <a class="contact__button" href="mailto:dasilva.galvan@gmail.com">Contact me</a>
+
+
+  </section>
+
+
+  <footer class="site-footer">
+    <p>© Ramon Galvan 2026. All rights reserved.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
